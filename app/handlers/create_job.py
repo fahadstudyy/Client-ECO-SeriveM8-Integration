@@ -19,6 +19,11 @@ def handle_create_job(event_data):
     if not deal_properties:
         return
 
+    sm8_job_id = deal_properties.get("sm8_job_id")
+    if sm8_job_id:
+        print(f"Job already exists in ServiceM8 with ID: {sm8_job_id}")
+        return
+
     contact_record_id = deal_properties.get("contact_record_id", "")
 
     # Check if contact already has an sm8_client_id
