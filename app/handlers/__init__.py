@@ -4,6 +4,7 @@ from .consult_visit import handle_consult_visit
 from app.utility.webhook import handle_job_event
 from .pre_install import handle_pre_install_inspection
 from .quote_accept import handle_hubspot_job_quote_accepted
+from app.handlers.job_schedule import handle_hubspot_job_scheduled
 
 webhook_handlers = {
     "JobActivity": handle_job_activity,
@@ -11,5 +12,6 @@ webhook_handlers = {
     "CreateJob": handle_create_job,
     "ConsultVisit": handle_consult_visit,
     "QuoteAccepted": handle_hubspot_job_quote_accepted,
+    "JobScheduled": handle_hubspot_job_scheduled,
     "PreInstalledInspection": handle_pre_install_inspection,
 }
