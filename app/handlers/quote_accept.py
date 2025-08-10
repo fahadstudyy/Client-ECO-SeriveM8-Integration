@@ -2,8 +2,13 @@ import os
 import logging
 import requests
 from app.handlers.job import get_job
+from app.utility.hubspot import (
+    find_hubspot_deal_by_job_uuid,
+    update_hubspot_deal_stage,
+)
 
 SERVICEM8_API_KEY = os.getenv("SERVICEM8_API_KEY")
+QUOTE_ACCEPTED_STAGE_ID = "1599473142"
 
 
 def update_job_status_to_work_order(uuid):
@@ -25,7 +30,7 @@ def update_job_status_to_work_order(uuid):
         return None
 
 
-def handle_job_quote_accepted(data):
+def handle_hubspot_job_quote_accepted(data):
     deal_id = data.get("deal_record_id")
     job_id = data.get("sm8_job_id")
     logging.info(f"Handling quote accepted for job: {job_id}")
@@ -42,3 +47,20 @@ def handle_job_quote_accepted(data):
         return
 
     update_job_status_to_work_order(job_id)
+
+
+def handle_sm8_job_quote_accepted(job_uuid):
+    sm8_job = get_job(job_uuid)
+    sm8_job_status = sm8_job.get("status", "").strip().lower()
+
+    if sm8_job_status != "work order":
+        logging.error(f"Skipping {job_uuid}. Job Status is {sm8_job_status}")
+        return
+
+    deal_id = find_hubspot_deal_by_job_uuid(job_uuid)
+    if not deal_id:
+        logging.warning(f"No HubSpot deal found for job_id: {job_uuid}")
+        return
+
+    logging.info(f"Found deal {deal_id}, updating stage to Quote Accepted.")
+    update_hubspot_deal_stage(deal_id, QUOTE_ACCEPTED_STAGE_ID)

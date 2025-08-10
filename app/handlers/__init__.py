@@ -1,12 +1,11 @@
-from .job import handle_job_quote_sent
-from .consult_visit import handle_consult_visit
 from .create_job import handle_create_job
-from .quote_accept import handle_job_quote_accepted
+from app.utility.webhook import handle_job_event
+from .consult_visit import handle_consult_visit
+from .quote_accept import handle_hubspot_job_quote_accepted
 
 webhook_handlers = {
     "JobActivity": handle_consult_visit,
-    "Job": handle_job_quote_sent,
+    "Job": handle_job_event,
     "CreateJob": handle_create_job,
-    "QuoteSent": handle_job_quote_sent,
-    "QuoteAccepted": handle_job_quote_accepted,
+    "QuoteAccepted": handle_hubspot_job_quote_accepted,
 }
