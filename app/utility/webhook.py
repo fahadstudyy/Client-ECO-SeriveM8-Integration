@@ -1,5 +1,8 @@
 from app.handlers.job import handle_job_quote_sent
-from app.handlers.quote_accept import handle_sm8_job_quote_accepted
+from app.handlers.quote_accept import (
+    handle_sm8_job_completed,
+    handle_sm8_job_quote_accepted,
+)
 
 
 def handle_job_event(data):
@@ -11,6 +14,7 @@ def handle_job_event(data):
     if "status" in changed_fields:
         print(f"Job {job_uuid} had its status updated.")
         handle_sm8_job_quote_accepted(job_uuid)
+        handle_sm8_job_completed(job_uuid)
     if "quote_sent" in changed_fields:
         print(f"Job {job_uuid} had its quote sent.")
         handle_job_quote_sent(data)

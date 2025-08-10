@@ -9,6 +9,7 @@ from app.utility.hubspot import (
 
 SERVICEM8_API_KEY = os.getenv("SERVICEM8_API_KEY")
 QUOTE_ACCEPTED_STAGE_ID = "1599473142"
+POST_INSTALL_ADMIN_STAGE_ID = "1643946489"
 
 
 def update_job_status_to_work_order(uuid):
@@ -64,3 +65,20 @@ def handle_sm8_job_quote_accepted(job_uuid):
 
     logging.info(f"Found deal {deal_id}, updating stage to Quote Accepted.")
     update_hubspot_deal_stage(deal_id, QUOTE_ACCEPTED_STAGE_ID)
+
+
+def handle_sm8_job_completed(job_uuid):
+    sm8_job = get_job(job_uuid)
+    sm8_job_status = sm8_job.get("status", "").strip().lower()
+
+    if sm8_job_status != "completed":
+        logging.error(f"Skipping {job_uuid}. Job Status is {sm8_job_status}")
+        return
+
+    deal_id = find_hubspot_deal_by_job_uuid(job_uuid)
+    if not deal_id:
+        logging.warning(f"No HubSpot deal found for job_id: {job_uuid}")
+        return
+
+    logging.info(f"Found deal {deal_id}, updating stage to Post Install Admin.")
+    update_hubspot_deal_stage(deal_id, POST_INSTALL_ADMIN_STAGE_ID)
