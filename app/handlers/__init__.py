@@ -9,6 +9,7 @@ webhook_handlers = {
     "JobActivity": handle_job_activity,
     "Job": handle_job_event,
     "CreateJob": handle_create_job,
+    "ConsultVisit": handle_consult_visit,
     "QuoteAccepted": handle_hubspot_job_quote_accepted,
-    "preinstalled_inspection": pre_installed_inspection,
+    "pre_installed_inspection": pre_installed_inspection,
 }

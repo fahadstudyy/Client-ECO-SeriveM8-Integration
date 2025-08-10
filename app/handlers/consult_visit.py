@@ -25,10 +25,9 @@ def get_job_activity(uuid):
 
 
 def handle_consult_visit(data):
-    entry = data.get("entry", [{}])[0]
-    job_activity_uuid = entry.get("uuid")
+    job_activity_uuid = data.get("job_activity_uuid")
     if not job_activity_uuid:
-        logging.error("No uuid in JobActivity entry.")
+        logging.error("No job_activity_uuid provided in data.")
         return
 
     job_activity = get_job_activity(job_activity_uuid)
