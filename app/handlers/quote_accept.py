@@ -9,7 +9,7 @@ from app.utility.hubspot import (
 
 SERVICEM8_API_KEY = os.getenv("SERVICEM8_API_KEY")
 QUOTE_ACCEPTED_STAGE_ID = "1599473142"
-POST_INSTALL_ADMIN_STAGE_ID = "1643946489"
+POST_INSTALL_ADMIN_STAGE_ID = "1637640663"
 
 
 def update_job_status_to_work_order(uuid):
