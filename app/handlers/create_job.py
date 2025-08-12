@@ -20,6 +20,12 @@ def handle_create_job(event_data):
         return
 
     sm8_job_id = deal_properties.get("sm8_job_id")
+    quote_platform = deal_properties.get("quote_platform", "").lower()
+
+    if quote_platform != "servicem8":
+        print(f"Quote platform is not ServiceM8: {quote_platform}")
+        return
+
     if sm8_job_id:
         print(f"Job already exists in ServiceM8 with ID: {sm8_job_id}")
         return
