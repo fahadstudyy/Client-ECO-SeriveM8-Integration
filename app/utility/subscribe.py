@@ -19,7 +19,7 @@ def main():
         "X-Api-Key": SERVICEM8_API_KEY,
     }
     data = {
-        "object": "jobActivity",
+        "object": "job",
         "fields": "quote_sent,status",
         "callback_url": "https://eco.3.26.113.202.sslip.io/webhook",
     }
