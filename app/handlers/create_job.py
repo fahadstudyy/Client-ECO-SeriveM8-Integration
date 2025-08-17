@@ -18,9 +18,9 @@ def handle_create_job(event_data):
         return
 
     sm8_job_id = deal_properties.get("sm8_job_id")
-    quote_platform = deal_properties.get("quote_platform", "").lower()
-
-    if quote_platform != "servicem8":
+    quote_platform = (deal_properties.get("quote_platform") or "").lower()
+    deal_stage = deal_properties.get("dealstage", "").lower()
+    if deal_stage != "decisionmakerboughtin" and quote_platform != "servicem8":
         print(f"Quote platform is not ServiceM8: {quote_platform}")
         return
 
