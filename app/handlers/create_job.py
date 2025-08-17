@@ -51,8 +51,8 @@ def handle_create_job(event_data):
             update_hubspot_contact_sm8_client_id(contact_record_id, client_uuid)
 
     # Step 2: Create job
-    service_category = deal_properties.get("service_category", "")
-    enquiry_notes = deal_properties.get("enquiry_notes", "")
+    service_category = deal_properties.get("service_category") or ""
+    enquiry_notes = deal_properties.get("enquiry_notes") or ""
 
     sm8_service_categories = get_servicem8_categories()
 
