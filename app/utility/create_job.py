@@ -135,7 +135,7 @@ def update_hubspot_deal_sm8_job_id(deal_id, job_uuid):
 def fetch_hubspot_deal_properties(deal_id):
     url = f"https://api.hubapi.com/crm/v3/objects/deals/{deal_id}"
     params = {
-        "properties": "contact_email,contact_first_name,contact_last_name,contact_phone_number,enquiry_notes,service_category,contact_record_id,sm8_job_id,quote_platform"
+        "properties": "contact_email,contact_first_name,contact_last_name,contact_phone_number,enquiry_notes,service_category,contact_record_id,sm8_job_id,quote_platform,timeline,existing_system,existing_system_size,site_address,deal_customer_type"
     }
     headers = {
         "Authorization": f"Bearer {HUBSPOT_API_TOKEN}",
