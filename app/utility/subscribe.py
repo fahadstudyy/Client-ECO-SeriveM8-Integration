@@ -20,8 +20,8 @@ def main():
     }
     data = {
         "object": "jobActivity",
-        "fields": "activity_was_scheduled",
-        "callback_url": "hhttps://eco.3.26.113.202.sslip.io/webhook",
+        "fields": "quote_sent,status",
+        "callback_url": "https://eco.3.26.113.202.sslip.io/webhook",
     }
 
     try:
