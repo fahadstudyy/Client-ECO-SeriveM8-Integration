@@ -83,3 +83,19 @@ def update_hubspot_deal_stage(deal_id, new_stage):
     except Exception as e:
         logging.error(f"Error updating HubSpot deal: {e}")
         return False
+    
+def get_hubspot_deal_properties(deal_id, properties):
+    """Fetches specific properties for a given HubSpot deal ID."""
+    url = f"https://api.hubapi.com/crm/v3/objects/deals/{deal_id}"
+    params = {"properties": ",".join(properties)}
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {HUBSPOT_API_TOKEN}",
+    }
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        return response.json().get("properties", {})
+    except Exception as e:
+        logging.error(f"Error fetching properties for deal {deal_id}: {e}")
+        return None
