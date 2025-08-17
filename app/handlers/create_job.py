@@ -1,157 +1,101 @@
-import os
-import logging
-import requests
+from datetime import date
+from app.utility.create_job import (
+    fetch_hubspot_contact_sm8_client_id,
+    update_hubspot_contact_sm8_client_id,
+    update_hubspot_deal_sm8_job_id,
+    fetch_hubspot_deal_properties,
+    create_servicem8_job_contact,
+    get_servicem8_categories,
+    create_servicem8_client,
+    create_servicem8_job,
+    format_value,
+)
 
+def handle_create_job(event_data):
+    deal_id = event_data.get("deal_record_id")
+    deal_properties = fetch_hubspot_deal_properties(deal_id)
+    if not deal_properties:
+        return
 
-SERVICEM8_API_KEY = os.getenv("SERVICEM8_API_KEY")
-HUBSPOT_API_TOKEN = os.getenv("HUBSPOT_API_TOKEN")
+    sm8_job_id = deal_properties.get("sm8_job_id")
+    quote_platform = deal_properties.get("quote_platform", "").lower()
 
+    if quote_platform != "servicem8":
+        print(f"Quote platform is not ServiceM8: {quote_platform}")
+        return
 
-def get_servicem8_categories():
-    url = "https://api.servicem8.com/api_1.0/category.json"
-    headers = {"X-Api-Key": SERVICEM8_API_KEY, "Accept": "application/json"}
+    if sm8_job_id:
+        print(f"Job already exists in ServiceM8 with ID: {sm8_job_id}")
+        return
 
-    try:
-        resp = requests.get(url, headers=headers)
-        resp.raise_for_status()
-        categories = resp.json()
-        logging.info(f"Retrieved {len(categories)} categories from ServiceM8.")
-        return categories
-    except Exception as e:
-        logging.error(f"Error retrieving ServiceM8 categories: {e}")
-        return None
+    contact_record_id = deal_properties.get("contact_record_id", "")
 
+    client_uuid = None
+    if contact_record_id:
+        client_uuid = fetch_hubspot_contact_sm8_client_id(contact_record_id)
 
-def fetch_hubspot_contact_sm8_client_id(contact_id):
-    url = f"https://api.hubapi.com/crm/v3/objects/contacts/{contact_id}"
-    params = {"properties": "sm8_client_id"}
-    headers = {
-        "Authorization": f"Bearer {HUBSPOT_API_TOKEN}",
-        "Content-Type": "application/json",
+    if not client_uuid:
+        first = deal_properties.get("contact_first_name", "")
+        last = deal_properties.get("contact_last_name", "")
+        full_name = f"{first} {last}".strip()
+        client_uuid = create_servicem8_client(full_name)
+        if not client_uuid:
+            return
+        if contact_record_id:
+            update_hubspot_contact_sm8_client_id(contact_record_id, client_uuid)
+    
+    # 1. Safely get all properties for the description
+    service_category = deal_properties.get("service_category") or ""
+    timeline = deal_properties.get("timeline") or ""
+    existing_system = deal_properties.get("existing_system") or ""
+    existing_system_size = deal_properties.get("existing_system_size") or ""
+    site_address = deal_properties.get("site_address") or ""
+    deal_customer_type = deal_properties.get("deal_customer_type") or ""
+    grid_connection = deal_properties.get("grid_connection") or ""
+    enquiry_notes = deal_properties.get("enquiry_notes") or ""
+
+    sm8_service_categories = get_servicem8_categories()
+    job_category_uuid = None
+    if sm8_service_categories:
+        for category in sm8_service_categories:
+            if category.get("name", "").lower() == service_category.lower():
+                job_category_uuid = category.get("uuid")
+                break
+
+    # 2. Build the new, detailed job description
+    description_parts = [
+        format_value('Service Category', service_category),
+        format_value('Timeline', timeline),
+        format_value('Existing System', existing_system),
+        format_value('Existing System Size', existing_system_size),
+        format_value('Customer Type', deal_customer_type),
+        format_value('Grid Connection', grid_connection),
+        f"Enquiry Notes: {enquiry_notes.strip()}"
+    ]
+    job_description = "\n".join(description_parts)
+
+    job_data = {
+        "job_description": job_description,
+        "job_address": site_address,
+        "category_uuid": job_category_uuid,
+        "status": "Quote",
+        "date": str(date.today()),
     }
-    try:
-        resp = requests.get(url, headers=headers, params=params)
-        resp.raise_for_status()
-        properties = resp.json().get("properties", {})
-        sm8_client_id = properties.get("sm8_client_id")
-        logging.info(f"Fetched sm8_client_id for contact {contact_id}: {sm8_client_id}")
-        return sm8_client_id
-    except Exception as e:
-        logging.error(f"Error fetching HubSpot contact {contact_id} sm8_client_id: {e}")
-        return None
 
+    print(f"Creating job with data: {job_data}")
+    
+    job_uuid = create_servicem8_job(job_data, client_uuid)
+    if not job_uuid:
+        return
+    print(f"Created job in sm8 with UUID: {job_uuid}")
 
-def update_hubspot_contact_sm8_client_id(contact_id, client_uuid):
-    url = f"https://api.hubapi.com/crm/v3/objects/contacts/{contact_id}"
-    headers = {
-        "Authorization": f"Bearer {HUBSPOT_API_TOKEN}",
-        "Content-Type": "application/json",
+    contact = {
+        "firstname": deal_properties.get("contact_first_name"),
+        "lastname": deal_properties.get("contact_last_name"),
+        "phone": deal_properties.get("contact_phone_number"),
+        "email": deal_properties.get("contact_email"),
     }
-    data = {"properties": {"sm8_client_id": client_uuid}}
+    create_servicem8_job_contact(job_uuid, contact)
 
-    try:
-        resp = requests.patch(url, json=data, headers=headers)
-        resp.raise_for_status()
-        logging.info(
-            f"Updated HubSpot contact {contact_id} with sm8_client_id: {client_uuid}"
-        )
-        return True
-    except Exception as e:
-        logging.error(f"Error updating HubSpot contact {contact_id}: {e}")
-        return False
-
-
-def create_servicem8_client(full_name):
-    url = "https://api.servicem8.com/api_1.0/company.json"
-    headers = {"X-Api-Key": SERVICEM8_API_KEY, "Content-Type": "application/json"}
-    payload = {"name": full_name}
-
-    try:
-        resp = requests.post(url, json=payload, headers=headers)
-        resp.raise_for_status()
-        client_uuid = resp.headers.get("x-record-uuid")
-        logging.info(f"Created ServiceM8 client UUID: {client_uuid}")
-        return client_uuid
-    except Exception as e:
-        logging.error(f"Error creating ServiceM8 client: {e}")
-        return None
-
-
-def create_servicem8_job(job_data, client_uuid):
-    url = "https://api.servicem8.com/api_1.0/job.json"
-    headers = {"X-Api-Key": SERVICEM8_API_KEY, "Content-Type": "application/json"}
-    job_data["company_uuid"] = client_uuid
-
-    try:
-        resp = requests.post(url, json=job_data, headers=headers)
-        resp.raise_for_status()
-        job_uuid = resp.headers.get("x-record-uuid")
-        logging.info(f"Created ServiceM8 Job UUID: {job_uuid}")
-        return job_uuid
-    except Exception as e:
-        logging.error(f"Error creating ServiceM8 job: {e}")
-        return None
-
-
-def create_servicem8_job_contact(job_uuid, contact):
-    url = "https://api.servicem8.com/api_1.0/jobcontact.json"
-    headers = {"X-Api-Key": SERVICEM8_API_KEY, "Content-Type": "application/json"}
-    contact_payload = {
-        "job_uuid": job_uuid,
-        "first": contact.get("firstname"),
-        "last": contact.get("lastname"),
-        "phone": contact.get("phone"),
-        "email": contact.get("email"),
-        "type": "JOB",
-        "is_primary_contact": 1,
-    }
-    try:
-        resp = requests.post(url, json=contact_payload, headers=headers)
-        resp.raise_for_status()
-        logging.info(f"Created JobContact for job: {job_uuid}")
-        return True
-    except Exception as e:
-        logging.error(f"Error creating JobContact: {e}")
-        return False
-
-
-def update_hubspot_deal_sm8_job_id(deal_id, job_uuid):
-    url = f"https://api.hubapi.com/crm/v3/objects/deals/{deal_id}"
-    headers = {
-        "Authorization": f"Bearer {HUBSPOT_API_TOKEN}",
-        "Content-Type": "application/json",
-    }
-    data = {"properties": {"sm8_job_id": job_uuid}}
-    try:
-        resp = requests.patch(url, json=data, headers=headers)
-        resp.raise_for_status()
-        logging.info(f"Updated HubSpot deal {deal_id} with sm8_job_id: {job_uuid}")
-        return True
-    except Exception as e:
-        logging.error(f"Error updating HubSpot deal {deal_id}: {e}")
-        return False
-
-
-def fetch_hubspot_deal_properties(deal_id):
-    url = f"https://api.hubapi.com/crm/v3/objects/deals/{deal_id}"
-    params = {
-        "properties": "contact_email,contact_first_name,contact_last_name,contact_phone_number,enquiry_notes,service_category,contact_record_id,sm8_job_id,quote_platform,timeline,existing_system,existing_system_size,site_address,deal_customer_type"
-    }
-    headers = {
-        "Authorization": f"Bearer {HUBSPOT_API_TOKEN}",
-        "Content-Type": "application/json",
-    }
-    try:
-        resp = requests.get(url, headers=headers, params=params)
-        resp.raise_for_status()
-        deal_properties = resp.json().get("properties", {})
-        logging.info(f"Fetched HubSpot deal {deal_id} properties: {deal_properties}")
-        return deal_properties
-    except Exception as e:
-        logging.error(f"Error fetching HubSpot deal {deal_id}: {e}")
-        return None
-
-
-def format_value(label, value):
-    items = [item.strip() for item in value.split(";") if item.strip()]
-    return f"{label}: {', '.join(items)}" if items else f"{label}:"
+    if deal_id:
+        update_hubspot_deal_sm8_job_id(deal_id, job_uuid)
