@@ -19,9 +19,9 @@ def main():
         "X-Api-Key": SERVICEM8_API_KEY,
     }
     data = {
-        "object": "job",
-        "fields": "quote_sent,status",
-        "callback_url": "https://39626f72cea9.ngrok-free.app/webhook",
+        "object": "jobActivity",
+        "fields": "activity_was_scheduled",
+        "callback_url": "hhttps://eco.3.26.113.202.sslip.io/webhook",
     }
 
     try:
