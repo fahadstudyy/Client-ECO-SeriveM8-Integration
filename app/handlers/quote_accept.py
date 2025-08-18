@@ -4,6 +4,7 @@ import requests
 from app.handlers.job import get_job
 from app.utility.hubspot import (
     find_hubspot_deal_by_job_uuid,
+    get_associated_deal_ids,
     update_hubspot_deal_stage,
 )
 
@@ -80,5 +81,16 @@ def handle_sm8_job_completed(job_uuid):
         logging.warning(f"No HubSpot deal found for job_id: {job_uuid}")
         return
 
-    logging.info(f"Found deal {deal_id}, updating stage to Post Install Admin.")
-    update_hubspot_deal_stage(deal_id, POST_INSTALL_ADMIN_STAGE_ID)
+    associated_deal_ids = get_associated_deal_ids(deal_id)
+
+    if associated_deal_ids:
+        first_associated_deal_id = associated_deal_ids[0]
+        print(f"First associated deal ID: {first_associated_deal_id}")
+    else:
+        print("No associated deals found.")
+        return
+
+    logging.info(
+        f"Found deal {first_associated_deal_id}, updating stage to Post Install Admin."
+    )
+    update_hubspot_deal_stage(first_associated_deal_id, POST_INSTALL_ADMIN_STAGE_ID)

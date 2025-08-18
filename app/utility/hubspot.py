@@ -83,7 +83,7 @@ def update_hubspot_deal_stage(deal_id, new_stage):
     except Exception as e:
         logging.error(f"Error updating HubSpot deal: {e}")
         return False
-    
+
 def get_hubspot_deal_properties(deal_id, properties):
     """Fetches specific properties for a given HubSpot deal ID."""
     url = f"https://api.hubapi.com/crm/v3/objects/deals/{deal_id}"
@@ -99,3 +99,22 @@ def get_hubspot_deal_properties(deal_id, properties):
     except Exception as e:
         logging.error(f"Error fetching properties for deal {deal_id}: {e}")
         return None
+
+
+def get_associated_deal_ids(deal_id):
+    url = f"https://api.hubapi.com/crm/v3/objects/deals/{deal_id}/associations/deal"
+    headers = {
+        "Authorization": f"Bearer {HUBSPOT_API_TOKEN}",
+        "Content-Type": "application/json",
+    }
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        associated_deal_ids = [
+            association["id"] for association in data.get("results", [])
+        ]
+        return associated_deal_ids
+    except Exception as e:
+        logging.error(f"Error retrieving associated deals: {e}")
+        return []
