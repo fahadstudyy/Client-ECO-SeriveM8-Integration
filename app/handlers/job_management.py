@@ -52,7 +52,8 @@ def handle_job_management(job_activity_uuid):
     if current_stage == READY_TO_SCHEDULE_STAGE_ID:
         logging.info(f"Updating deal {first_associated_deal_id} to Job Scheduled stage")
         update_hubspot_deal(
-            first_associated_deal_id, {"pre_install_inspection_date": formatted_date}
+            first_associated_deal_id,
+            {"job_date": formatted_date},
         )
         update_hubspot_deal_stage(first_associated_deal_id, JOB_SCHEDULED_PIPELINE_ID)
 
